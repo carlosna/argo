@@ -10,6 +10,11 @@ image:
   digest: ""
   pullPolicy: IfNotPresent
 
+temporaryStorage:
+  enabled: true
+  mountPath: /tmp
+  sizeLimit: 256Mi  
+
 imagePullSecrets: []
 
 serviceAccount:
