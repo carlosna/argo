@@ -5,7 +5,7 @@ partOf: example-platform
 
 image:
   repository: carlosna/boletojuros
-  tag: bootstrap
+  tag: latest
   # Quando preenchido, o digest tem precedência sobre a tag.
   digest: ""
   pullPolicy: IfNotPresent
