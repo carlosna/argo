@@ -1,0 +1,5 @@
+Aplicativo: {{ include "rollout-app.fullname" . }}
+Host: {{ first .Values.istio.gateway.hosts }}
+Rollout:
+  kubectl argo rollouts get rollout {{ include "rollout-app.fullname" . }} -n {{ .Release.Namespace }} --watch
+

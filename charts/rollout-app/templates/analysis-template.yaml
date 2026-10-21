@@ -1,0 +1,84 @@
+{{- if .Values.analysis.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: {{ include "rollout-app.fullname" . }}-quality-gate
+  labels:
+    {{- include "rollout-app.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: service
+    - name: namespace
+    - name: revision
+  metrics:
+    - name: minimum-request-rate
+      initialDelay: {{ .Values.analysis.initialDelay }}
+      interval: {{ .Values.analysis.interval }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      consecutiveErrorLimit: {{ .Values.analysis.consecutiveErrorLimit }}
+      successCondition: "result[0] >= {{ .Values.analysis.minimumRequestRate }}"
+      provider:
+        prometheus:
+          address: {{ .Values.analysis.prometheusAddress | quote }}
+          query: |
+            sum(
+              rate(istio_requests_total{
+                reporter="destination",
+                destination_canonical_service="{{`{{ args.service }}`}}",
+                destination_workload_namespace="{{`{{ args.namespace }}`}}",
+                destination_canonical_revision="{{`{{ args.revision }}`}}"
+              }[{{ .Values.analysis.queryWindow }}])
+            ) or vector(0)
+    - name: success-rate
+      initialDelay: {{ .Values.analysis.initialDelay }}
+      interval: {{ .Values.analysis.interval }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      consecutiveErrorLimit: {{ .Values.analysis.consecutiveErrorLimit }}
+      successCondition: "result[0] >= {{ .Values.analysis.successRateThreshold }}"
+      provider:
+        prometheus:
+          address: {{ .Values.analysis.prometheusAddress | quote }}
+          query: |
+            (
+              sum(rate(istio_requests_total{
+                reporter="destination",
+                destination_canonical_service="{{`{{ args.service }}`}}",
+                destination_workload_namespace="{{`{{ args.namespace }}`}}",
+                destination_canonical_revision="{{`{{ args.revision }}`}}",
+                response_code!~"5.."
+              }[{{ .Values.analysis.queryWindow }}])) or vector(0)
+            )
+            /
+            clamp_min(
+              sum(rate(istio_requests_total{
+                reporter="destination",
+                destination_canonical_service="{{`{{ args.service }}`}}",
+                destination_workload_namespace="{{`{{ args.namespace }}`}}",
+                destination_canonical_revision="{{`{{ args.revision }}`}}"
+              }[{{ .Values.analysis.queryWindow }}])) or vector(0),
+              0.001
+            )
+    - name: latency-p95
+      initialDelay: {{ .Values.analysis.initialDelay }}
+      interval: {{ .Values.analysis.interval }}
+      count: {{ .Values.analysis.count }}
+      failureLimit: {{ .Values.analysis.failureLimit }}
+      consecutiveErrorLimit: {{ .Values.analysis.consecutiveErrorLimit }}
+      successCondition: "result[0] <= {{ .Values.analysis.latencyP95ThresholdMs }}"
+      provider:
+        prometheus:
+          address: {{ .Values.analysis.prometheusAddress | quote }}
+          query: |
+            histogram_quantile(
+              0.95,
+              sum(rate(istio_request_duration_milliseconds_bucket{
+                reporter="destination",
+                destination_canonical_service="{{`{{ args.service }}`}}",
+                destination_workload_namespace="{{`{{ args.namespace }}`}}",
+                destination_canonical_revision="{{`{{ args.revision }}`}}"
+              }[{{ .Values.analysis.queryWindow }}])) by (le)
+            ) or vector(0)
+{{- end }}
+

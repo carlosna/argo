@@ -1,0 +1,20 @@
+{{- if .Values.monitoring.podMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: {{ include "rollout-app.fullname" . }}-istio
+  labels:
+    {{- include "rollout-app.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.podMonitor.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "rollout-app.selectorLabels" . | nindent 6 }}
+  podMetricsEndpoints:
+    - port: http-envoy-prom
+      path: /stats/prometheus
+      interval: {{ .Values.monitoring.podMonitor.interval }}
+{{- end }}
+

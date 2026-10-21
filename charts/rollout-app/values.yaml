@@ -1,0 +1,154 @@
+replicaCount: 2
+nameOverride: ""
+fullnameOverride: ""
+partOf: example-platform
+
+image:
+  repository: carlosna/boletojuros
+  tag: bootstrap
+  # Quando preenchido, o digest tem precedência sobre a tag.
+  digest: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+  automountServiceAccountToken: false
+
+podAnnotations:
+  sidecar.istio.io/inject: "true"
+podLabels: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+container:
+  port: 8080
+
+service:
+  port: 80
+  targetPort: http
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+env: []
+envFrom: []
+
+probes:
+  startup:
+    enabled: false
+    path: /health/ready
+    failureThreshold: 30
+    periodSeconds: 5
+  readiness:
+    enabled: false
+    path: /health/ready
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+  liveness:
+    enabled: false
+    path: /health/live
+    initialDelaySeconds: 20
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+terminationGracePeriodSeconds: 30
+
+rollout:
+  revisionHistoryLimit: 5
+  progressDeadlineSeconds: 900
+  scaleDownDelaySeconds: 30
+  abortScaleDownDelaySeconds: 30
+  maxSurge: 1
+  maxUnavailable: 0
+  minPodsPerReplicaSet: 1
+  analysisHistory:
+    successful: 5
+    unsuccessful: 5
+  steps:
+    - setWeight: 10
+    - pause:
+        duration: 1m
+    - analysis: {}
+    - setWeight: 25
+    - pause:
+        duration: 2m
+    - analysis: {}
+    - setWeight: 50
+    - pause:
+        duration: 5m
+    - analysis: {}
+    - setWeight: 100
+
+istio:
+  enabled: true
+  gateway:
+    # Preferência: Gateway compartilhado, administrado em platform/manifests.
+    create: false
+    name: public-gateway
+    namespace: istio-ingress
+    selector:
+      istio: ingressgateway
+    port: 80
+    hosts:
+      - "*"
+  virtualService:
+    routeName: primary
+  mtls:
+    enabled: true
+  authorizationPolicy:
+    enabled: false
+    ingressGatewayServiceAccount: istio-ingress
+    ingressGatewayNamespace: istio-ingress
+
+analysis:
+  enabled: true
+  prometheusAddress: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
+  initialDelay: 30s
+  interval: 30s
+  count: 5
+  failureLimit: 2
+  consecutiveErrorLimit: 2
+  queryWindow: 2m
+  minimumRequestRate: 0.01
+  successRateThreshold: 0.99
+  latencyP95ThresholdMs: 500
+
+monitoring:
+  podMonitor:
+    enabled: true
+    interval: 15s
+    labels:
+      release: kube-prometheus-stack
+
+networkPolicy:
+  enabled: false
+  ingressNamespace: istio-ingress
+  monitoringNamespace: monitoring
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []
+

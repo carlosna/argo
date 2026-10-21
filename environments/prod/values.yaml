@@ -1,0 +1,25 @@
+replicaCount: 2
+
+#image:
+#  repository: SEU_ACR.azurecr.io/SEU_APLICATIVO
+#  tag: bootstrap
+#  digest: ""
+
+#istio:
+#  gateway:
+#    hosts:
+#      - app.seudominio.com.br
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 1000m
+    memory: 512Mi
+
+analysis:
+  minimumRequestRate: 0.01
+  successRateThreshold: 0.99
+  latencyP95ThresholdMs: 500
+
