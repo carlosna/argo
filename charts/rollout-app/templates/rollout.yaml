@@ -79,6 +79,11 @@ spec:
             - name: http
               containerPort: {{ .Values.container.port }}
               protocol: TCP
+          {{- if .Values.temporaryStorage.enabled }}
+          volumeMounts:
+            - name: application-tmp
+              mountPath: {{ .Values.temporaryStorage.mountPath }}
+          {{- end }}
           {{- if .Values.probes.startup.enabled }}
           startupProbe:
             httpGet:
@@ -116,6 +121,12 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      {{- if .Values.temporaryStorage.enabled }}
+      volumes:
+        - name: application-tmp
+          emptyDir:
+            sizeLimit: {{ .Values.temporaryStorage.sizeLimit }}
+      {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
