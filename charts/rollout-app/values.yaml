@@ -5,7 +5,7 @@ partOf: example-platform
 
 image:
   repository: carlosna/boletojuros
-  tag: latest
+  tag: sha-cdc2ca8
   # Quando preenchido, o digest tem precedência sobre a tag.
   digest: ""
   pullPolicy: IfNotPresent
