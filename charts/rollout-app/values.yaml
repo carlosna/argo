@@ -5,7 +5,7 @@ partOf: example-platform
 
 image:
   repository: carlosna/boletojuros
-  tag: sha-cdc2ca8
+  tag: sha-04089dc
   # Quando preenchido, o digest tem precedência sobre a tag.
   digest: ""
   pullPolicy: IfNotPresent
@@ -60,19 +60,21 @@ envFrom: []
 
 probes:
   startup:
-    enabled: false
-    path: /health/ready
+    enabled: true
+    path: /actuator/health/liveness
     failureThreshold: 30
     periodSeconds: 5
+
   readiness:
-    enabled: false
-    path: /health/ready
+    enabled: true
+    path: /actuator/health/readiness
     periodSeconds: 5
     timeoutSeconds: 2
     failureThreshold: 3
+
   liveness:
-    enabled: false
-    path: /health/live
+    enabled: true
+    path: /actuator/health/liveness
     initialDelaySeconds: 20
     periodSeconds: 10
     timeoutSeconds: 2
